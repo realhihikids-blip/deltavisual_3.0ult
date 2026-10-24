@@ -20,7 +20,17 @@ jobs:
         with:
           gradle-version: "9.4.1"
 
+      - name: Find project directory
+        id: find
+        run: |
+          FILE=$(find . -name settings.gradle -not -path './.git/*' | head -n 1)
+          if [ -z "$FILE" ]; then echo "settings.gradle not found"; find . -not -path './.git/*' | head -50; exit 1; fi
+          DIR=$(dirname "$FILE")
+          echo "Project directory: $DIR"
+          echo "dir=$DIR" >> "$GITHUB_OUTPUT"
+
       - name: Build
+        working-directory: ${{ steps.find.outputs.dir }}
         run: gradle build --stacktrace
 
       - name: Upload mod jar
@@ -28,4 +38,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: delta-visuals-jar
-          path: build/libs/*.jar
+          path: |
+            ${{ steps.find.outputs.dir }}/build/libs/*.jar
+            !${{ steps.find.outputs.dir }}/build/libs/*-sources.jar
